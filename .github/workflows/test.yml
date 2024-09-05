@@ -15,6 +15,10 @@ jobs:
           choco install docker-cli
           Start-Service docker
 
+      - name: Pull Ubuntu Docker Image
+        run: |
+          docker pull ubuntu:latest
+
       - name: Run Docker container with SSH server
         run: |
           docker run -d --name ssh_container -p 2222:22 ubuntu:latest
