@@ -15,6 +15,10 @@ jobs:
           choco install docker-cli
           Start-Service docker
 
+      - name: Switch Docker to Linux container mode
+        run: |
+          & "$Env:ProgramFiles\Docker\Docker\DockerCli.exe" -SwitchLinuxEngine
+
       - name: Pull Ubuntu Docker Image
         run: |
           docker pull ubuntu:latest
