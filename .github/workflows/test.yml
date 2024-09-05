@@ -1,44 +1,34 @@
-name: Parallel Jobs Example
+name: SSH into Docker Container on Windows Runner
 
 on: [push]
 
 jobs:
-  job1-windows:
+  windows-job:
     runs-on: windows-latest
-    steps:
-      - name: Check out code
-        uses: actions/checkout@v3
 
-      - name: Install OpenSSH Client
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Install Docker
+        run: |
+          choco install docker-cli
+          Start-Service docker
+
+      - name: Run Docker container with SSH server
+        run: |
+          docker run -d --name ssh_container -p 2222:22 ubuntu:latest
+          docker exec ssh_container apt-get update
+          docker exec ssh_container apt-get install -y openssh-server
+          docker exec ssh_container service ssh start
+          docker exec ssh_container mkdir /root/.ssh
+          docker exec ssh_container bash -c "echo 'your-public-key-here' > /root/.ssh/authorized_keys"
+      
+      - name: Install OpenSSH Client on Windows
         run: |
           Add-WindowsCapability -Online -Name OpenSSH.Client*
-      
-      - name: Execute SSH command on Ubuntu runner
+
+      - name: SSH into Docker Container
         run: |
-          ssh -o StrictHostKeyChecking=no user@${{ needs.job2-ubuntu.outputs.ubuntu_ip }} "echo 'Hello from Windows runner!'"
-          
-    needs: job2-ubuntu
-
-  job2-ubuntu:
-    runs-on: ubuntu-latest
-    outputs:
-      ubuntu_ip: ${{ steps.get_ip.outputs.ubuntu_ip }}
-
-    steps:
-      - name: Check out code
-        uses: actions/checkout@v3
-
-      - name: Get Ubuntu runner IP
-        id: get_ip
-        run: |
-          echo "ubuntu_ip=$(hostname -I | awk '{print $1}')" >> $GITHUB_ENV
-          echo "::set-output name=ubuntu_ip::$(hostname -I | awk '{print $1}')"
-
-      - name: Set up SSH access for Windows runner
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y openssh-server
-          sudo systemctl start ssh
-          sudo mkdir -p ~/.ssh
-          echo "${{ secrets.SSH_PUBLIC_KEY }}" >> ~/.ssh/authorized_keys
-          sudo systemctl restart ssh
+          ssh -o StrictHostKeyChecking=no root@localhost -p 2222
+        shell: bash
