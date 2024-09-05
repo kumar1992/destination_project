@@ -1,4 +1,4 @@
-name: Run Linux Docker Container on Windows Runner
+name: Install Docker EE on Windows Runner
 
 on:
   push:
@@ -6,37 +6,30 @@ on:
       - main
 
 jobs:
-  run-linux-container-on-windows:
-    runs-on: windows-latest
-    
-    steps:
-      - name: Install Docker
-        run: |
-          # Install Docker if not installed (use Chocolatey package manager)
-          choco install docker-cli
-          choco install docker-desktop
+  install-docker-ee:
+    runs-on: windows-2022
 
-      - name: Start Docker
+    steps:
+      - name: Enable Containers Feature
         run: |
-          # Start Docker service on Windows
+          Install-WindowsFeature -Name Containers
+
+      - name: Install Docker EE
+        run: |
+          # Install Docker Enterprise Edition on Windows
+          Invoke-WebRequest -Uri https://download.docker.com/components/engine/windows-server/20.10/docker-20.10.14.zip -OutFile "$env:TEMP\docker.zip"
+          Expand-Archive -Path "$env:TEMP\docker.zip" -DestinationPath "$env:ProgramFiles\Docker"
+          
+          # Add Docker to PATH
+          [System.Environment]::SetEnvironmentVariable("Path", $env:Path + ";C:\Program Files\Docker", [System.EnvironmentVariableTarget]::Machine)
+          
+          # Install Docker service
+          dockerd --register-service
+
+      - name: Start Docker Service
+        run: |
           Start-Service docker
 
-      - name: Check Docker Version
-        run: docker --version
-
-      - name: Pull and Run Linux Container
+      - name: Verify Docker Installation
         run: |
-          # Pull Ubuntu Linux image
-          docker pull ubuntu:latest
-
-          # Run a container in detached mode
-          docker run -d --name linux-container ubuntu:latest
-
-          # Check the OS type in the container
-          docker exec linux-container uname -a
-
-      - name: Clean Up
-        run: |
-          # Stop and remove the container
-          docker stop linux-container
-          docker rm linux-container
+          docker --version
