@@ -20,7 +20,7 @@ jobs:
       - name: Pull a Linux container (Ubuntu example)
         run: |
           # Pull Ubuntu Linux container from Docker Hub
-          docker pull ubuntu
+          docker pull ubuntu:22.04
 
       - name: Run a Linux container
         run: |
