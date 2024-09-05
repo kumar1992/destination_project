@@ -1,4 +1,4 @@
-name: Install Docker EE on Windows Runner
+name: Run Linux container on Windows runner
 
 on:
   push:
@@ -6,30 +6,24 @@ on:
       - main
 
 jobs:
-  install-docker-ee:
-    runs-on: windows-2022
-
+  windows_job:
+    runs-on: windows-latest
     steps:
-      - name: Enable Containers Feature
-        run: |
-          Install-WindowsFeature -Name Containers
+      - name: Check out the repository
+        uses: actions/checkout@v2
 
-      - name: Install Docker EE
+      - name: Set up Docker on Windows
         run: |
-          # Install Docker Enterprise Edition on Windows
-          Invoke-WebRequest -Uri https://download.docker.com/components/engine/windows-server/20.10/docker-20.10.14.zip -OutFile "$env:TEMP\docker.zip"
-          Expand-Archive -Path "$env:TEMP\docker.zip" -DestinationPath "$env:ProgramFiles\Docker"
-          
-          # Add Docker to PATH
-          [System.Environment]::SetEnvironmentVariable("Path", $env:Path + ";C:\Program Files\Docker", [System.EnvironmentVariableTarget]::Machine)
-          
-          # Install Docker service
-          dockerd --register-service
-
-      - name: Start Docker Service
-        run: |
-          Start-Service docker
-
-      - name: Verify Docker Installation
-        run: |
+          # Verify if Docker is installed
           docker --version
+
+      - name: Pull a Linux container (Ubuntu example)
+        run: |
+          # Pull Ubuntu Linux container from Docker Hub
+          docker pull ubuntu
+
+      - name: Run a Linux container
+        run: |
+          # Run commands inside a Linux container
+          docker run -it ubuntu bash -c "echo 'Running from Linux container' && uname -a"
+
