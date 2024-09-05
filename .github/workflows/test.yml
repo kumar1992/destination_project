@@ -1,42 +1,42 @@
-name: SSH into Docker Container on Windows Runner
+name: Run Linux Docker Container on Windows Runner
 
-on: [push]
+on:
+  push:
+    branches:
+      - main
 
 jobs:
-  windows-job:
+  run-linux-container-on-windows:
     runs-on: windows-latest
-
+    
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-
       - name: Install Docker
         run: |
+          # Install Docker if not installed (use Chocolatey package manager)
           choco install docker-cli
+          choco install docker-desktop
+
+      - name: Start Docker
+        run: |
+          # Start Docker service on Windows
           Start-Service docker
 
-      - name: Switch Docker to Linux container mode
-        run: |
-          & "$Env:ProgramFiles\Docker\Docker\DockerCli.exe" -SwitchLinuxEngine
+      - name: Check Docker Version
+        run: docker --version
 
-      - name: Pull Ubuntu Docker Image
+      - name: Pull and Run Linux Container
         run: |
+          # Pull Ubuntu Linux image
           docker pull ubuntu:latest
 
-      - name: Run Docker container with SSH server
-        run: |
-          docker run -d --name ssh_container -p 2222:22 ubuntu:latest
-          docker exec ssh_container apt-get update
-          docker exec ssh_container apt-get install -y openssh-server
-          docker exec ssh_container service ssh start
-          docker exec ssh_container mkdir /root/.ssh
-          docker exec ssh_container bash -c "echo 'your-public-key-here' > /root/.ssh/authorized_keys"
-      
-      - name: Install OpenSSH Client on Windows
-        run: |
-          Add-WindowsCapability -Online -Name OpenSSH.Client*
+          # Run a container in detached mode
+          docker run -d --name linux-container ubuntu:latest
 
-      - name: SSH into Docker Container
+          # Check the OS type in the container
+          docker exec linux-container uname -a
+
+      - name: Clean Up
         run: |
-          ssh -o StrictHostKeyChecking=no root@localhost -p 2222
-        shell: bash
+          # Stop and remove the container
+          docker stop linux-container
+          docker rm linux-container
